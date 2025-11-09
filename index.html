@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — WormGPT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Inter", sans-serif;
+        }
+
+        body {
+            background: #0f0f10;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.3);
+        }
+
+        .login-container h2 {
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .login-container p {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0078ff, #00e0ff);
+            color: #fff;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .login-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .footer-text {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .footer-text a {
+            color: #00e0ff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .mockup-glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,208,255,0.3) 0%, transparent 70%);
+            filter: blur(60px);
+            z-index: -1;
+            animation: float 6s ease-in-out infinite alternate;
+        }
+
+        .mockup-glow:nth-child(1) {
+            top: 10%;
+            left: 15%;
+        }
+
+        .mockup-glow:nth-child(2) {
+            bottom: 10%;
+            right: 15%;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(0px);
+            }
+            to {
+                transform: translateY(30px);
+            }
+        }
+
+        .error-message {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(68, 255, 68, 0.2);
+            border: 1px solid #44ff44;
+            color: #44ff44;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mockup-glow"></div>
+    <div class="mockup-glow"></div>
+
+    <div class="login-container">
+        <h2 id="formTitle">Welcome Back</h2>
+        <p id="formSubtitle">
+            Masuk ke akun kamu untuk lanjut
+        </p>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="authForm">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Masukkan username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Kata Sandi</label>
+                <input type="password" id="password" placeholder="Masukkan kata sandi" required>
+            </div>
+            <button class="login-btn" type="submit" id="submitBtn">Login</button>
+        </form>
+        <div class="footer-text">
+            <span id="toggleText">Belum punya akun?</span> <a href="#" id="toggleLink">Daftar sekarang</a>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase
+        import {
+            initializeApp
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import {
+            getDatabase,
+            ref,
+            get,
+            set,
+            child
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+
+        // Konfigurasi Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4H5WqXsv7TYLqYlaZUtJJcwyZaIueSls",
+            authDomain: "wormgptx.firebaseapp.com",
+            databaseURL: "https://wormgptx-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wormgptx",
+            storageBucket: "wormgptx.firebasestorage.app",
+            messagingSenderId: "699515675996",
+            appId: "1:699515675996:web:7c7367ee05318c416c4d99",
+            measurementId: "G-1LWR54H8X2"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let isLoginMode = true;
+
+        const formTitle = document.getElementById('formTitle');
+        const formSubtitle = document.getElementById('formSubtitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const toggleText = document.getElementById('toggleText');
+        const toggleLink = document.getElementById('toggleLink');
+        const authForm = document.getElementById('authForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        // Toggle antara Login dan Register
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+
+            if (isLoginMode) {
+                formTitle.textContent = 'Welcome Back';
+                formSubtitle.textContent = 'Masuk ke akun kamu untuk lanjut';
+                submitBtn.textContent = 'Login';
+                toggleText.textContent = 'Belum punya akun?';
+                toggleLink.textContent = 'Daftar sekarang';
+            } else {
+                formTitle.textContent = 'Create Account';
+                formSubtitle.textContent = 'Daftar untuk mulai menggunakan';
+                submitBtn.textContent = 'Daftar';
+                toggleText.textContent = 'Sudah punya akun?';
+                toggleLink.textContent = 'Login sekarang';
+            }
+
+            hideMessages();
+        });
+
+        // Handle form submit
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!username || !password) {
+                showError('Username dan password harus diisi!');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Memproses...';
+
+            try {
+                if (isLoginMode) {
+                    await handleLogin(username, password);
+                } else {
+                    await handleRegister(username, password);
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = isLoginMode ? 'Login': 'Daftar';
+            }
+        });
+
+        // Generate session ID unik
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Handle Login
+        async function handleLogin(username, password) {
+            const dbRef = ref(database);
+            const snapshot = await get(child(dbRef, 'UsersGPT'));
+
+            if (!snapshot.exists()) {
+                throw new Error('Database tidak ditemukan!');
+            }
+
+            const users = snapshot.val();
+            let userFound = null;
+            let userId = null;
+
+            // Cari user berdasarkan username dan password
+            for (const [key, value] of Object.entries(users)) {
+                if (value.user === username && value.pass === password) {
+                    userFound = value;
+                    userId = key;
+                    break;
+                }
+            }
+
+            if (!userFound) {
+                throw new Error('Username atau password salah!');
+            }
+
+            // Cek apakah user sudah ada session aktif di perangkat lain
+            if (userFound.sessionId) {
+                // Generate session ID unik untuk perangkat ini
+                const currentSessionId = localStorage.getItem('deviceSessionId') || generateSessionId();
+                
+                // Cek apakah session ID berbeda (perangkat berbeda)
+                if (userFound.sessionId !== currentSessionId) {
+                    throw new Error('Akun ini sedang aktif di perangkat lain! Silakan logout terlebih dahulu.');
+                }
+            }
+
+            // Generate session ID unik untuk perangkat ini
+            const newSessionId = localStorage.getItem('deviceSessionId') || generateSessionId();
+            localStorage.setItem('deviceSessionId', newSessionId);
+
+            // Update session di database
+            await set(ref(database, `UsersGPT/${userId}/sessionId`), newSessionId);
+
+            // Simpan session lokal
+            const sessionData = {
+                userId: userId,
+                username: userFound.user,
+                role: userFound.role,
+                loginTime: Date.now(),
+                sessionId: newSessionId
+            };
+
+            localStorage.setItem('userSession', JSON.stringify(sessionData));
+
+            // Initialize usage data untuk user biasa
+            if (userFound.role === 'user') {
+                const existingUsage = localStorage.getItem('usageData');
+                if (!existingUsage) {
+                    localStorage.setItem('usageData', JSON.stringify({
+                        requestCount: 0,
+                        phase: 1,
+                        cooldownUntil: null
+                    }));
+                }
+            }
+
+            showSuccess('Login berhasil! Mengalihkan...');
+
+            setTimeout(() => {
+                window.location.replace('homeai.html');
+            }, 1500);
+        }
+
+        // Handle Register
+        async function handleRegister(username, password) {
+            const dbRef = ref(database);
+            const snapshot = await get(child(dbRef, 'UsersGPT'));
+
+            let users = {};
+            if (snapshot.exists()) {
+                users = snapshot.val();
+
+                // Cek apakah username sudah ada
+                for (const value of Object.values(users)) {
+                    if (value.user === username) {
+                        throw new Error('Username sudah digunakan!');
+                    }
+                }
+            }
+
+            // Generate ID unik dengan format Ok618_xxxxx
+            const randomStr = Math.random().toString(36).substr(2, 9);
+            const userId = `Ok618_${randomStr}`;
+
+            // Simpan user baru dengan role 'user'
+            await set(ref(database, `UsersGPT/${userId}`), {
+                user: username,
+                credits: 0,
+                pass: password,
+                role: 'user'
+            });
+
+            showSuccess('Pendaftaran berhasil! Silakan login.');
+
+            // Switch ke mode login setelah 2 detik
+            setTimeout(() => {
+                isLoginMode = true;
+                formTitle.textContent = 'Welcome Back';
+                formSubtitle.textContent = 'Masuk ke akun kamu untuk lanjut';
+                submitBtn.textContent = 'Login';
+                toggleText.textContent = 'Belum punya akun?';
+                toggleLink.textContent = 'Daftar sekarang';
+                usernameInput.value = username;
+                hideMessages();
+            }, 2000);
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        // Cek apakah sudah login (hanya jalankan sekali)
+        let hasCheckedSession = false;
+        
+        window.addEventListener('load', () => {
+            if (hasCheckedSession) return;
+            hasCheckedSession = true;
+            
+            const session = localStorage.getItem('userSession');
+            if (session) {
+                // Redirect ke homeai.html, bukan index.html
+                window.location.replace('homeai.html');
+            }
+        });
+    </script>
+
+</body>
+</html>
